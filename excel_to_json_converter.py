@@ -1,5 +1,3 @@
-# Install necessary packages
-!pip install pandas openpyxl
 
 from google.colab import files
 import pandas as pd

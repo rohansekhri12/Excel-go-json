@@ -1,36 +1,47 @@
+# Install necessary packages
+!pip install pandas openpyxl
+
+from google.colab import files
 import pandas as pd
 import json
 import os
-from google.colab import files
 
-def upload_file():
-    """Handles file selection in Colab."""
-    try:
-        uploaded = files.upload()  # Opens file selection dialog in Colab
-        file_name = list(uploaded.keys())[0]  # Get uploaded file name
-        return file_name  # Return the path of uploaded file
-    except Exception as e:
-        print(f"File upload error: {e}")
-        return None
+def select_excel_file():
+    """Allows user to upload an Excel file in Google Colab."""
+    uploaded = files.upload()  # Opens file upload dialog
+    for filename in uploaded.keys():
+        print(f"✅ File '{filename}' uploaded successfully.")
+        return filename  # Return the name of the uploaded file
+    return None
+
+def format_tower_name(tower):
+    """Formats the tower name to ensure it follows 'Tower-X' format."""
+    return f"Tower-{tower}".replace(" ", "")
 
 def process_excel_data(file_path):
     """Reads the Excel file and processes it into JSON format."""
+
+    # Check if file exists
+    if not os.path.exists(file_path):
+        print("🚨 Error: File does not exist.")
+        return None
+
     try:
         df = pd.read_excel(file_path)
     except Exception as e:
-        print(f"Error reading Excel file: {e}")
+        print(f"⚠️ Error reading the Excel file: {e}")
         return None
 
     required_columns = ["Tower Name", "Floor Number", "Company Name(s)"]
     for col in required_columns:
         if col not in df.columns:
-            print(f"Error: Missing required column '{col}' in the Excel file.")
+            print(f"🚨 Error: Missing required column '{col}' in the Excel file.")
             return None
 
     towers_dict = {}
     for _, row in df.iterrows():
-        tower = f"Tower-{str(row['Tower Name']).strip()}"
-        floor = str(row["Floor Number"]).strip()
+        tower = format_tower_name(str(row["Tower Name"]))
+        floor = str(row["Floor Number"])
         companies = [company.strip() for company in str(row["Company Name(s)"]).split(',')]
 
         if tower not in towers_dict:
@@ -46,27 +57,34 @@ def process_excel_data(file_path):
     return towers_list
 
 def save_to_json(data):
-    """Save JSON output and allow user to download it."""
-    json_filename = "converted_data.json"
+    """Saves the processed data to a JSON file and allows the user to download it."""
+    json_filename = "tower_data.json"
+
     with open(json_filename, 'w', encoding='utf-8') as json_file:
         json.dump(data, json_file, indent=2)
-    files.download(json_filename)  # Automatically download JSON file
+
+    print(f"✅ Data successfully saved to '{json_filename}'.")
+
+    # Provide download link
+    files.download(json_filename)
+    print("⬇️ Download started!")
 
 def main():
-    """Main function to run script."""
-    print("📂 Select an Excel file OR enter the file path manually.")
-    
-    file_path = upload_file()
-    
-    if not file_path:
-        print("No file uploaded. Exiting.")
-        return
-    
-    print(f"Processing file: {file_path}")
-    data = process_excel_data(file_path)
+    """Main function to execute the script."""
+    print("📂 Upload an Excel file to process.")
 
-    if data:
+    file_name = select_excel_file()
+
+    if not file_name:
+        print("❌ No file selected. Exiting...")
+        return
+
+    print(f"⚙️ Processing file: {file_name}")
+
+    data = process_excel_data(file_name)
+
+    if data is not None:
         save_to_json(data)
 
-if __name__ == "__main__":
-    main()
+# Run the script
+main()

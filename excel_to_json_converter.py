@@ -1,3 +1,27 @@
+"""
+Excel to JSON Converter Script
+
+📌 Instructions:
+1️⃣ Upload an Excel file that follows this structure:
+   --------------------------------------------------------
+   | Tower Name | Floor Number | Company Name(s)         |
+   --------------------------------------------------------
+   | Tower A    | 1           | Company X, Company Y    |
+   | Tower A    | 2           | Company Z               |
+   | Tower B    | 1           | Company A, Company B    |
+   --------------------------------------------------------
+
+2️⃣ Ensure the column names are exactly:
+   - "Tower Name"
+   - "Floor Number"
+   - "Company Name(s)"
+
+3️⃣ The "Company Name(s)" column should have comma-separated values if multiple companies occupy the same floor.
+
+4️⃣ Once uploaded, the script will convert the data into a structured JSON format.
+
+🚀 Happy converting!
+"""
 
 from google.colab import files
 import pandas as pd

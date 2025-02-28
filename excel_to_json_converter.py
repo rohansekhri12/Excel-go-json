@@ -103,7 +103,7 @@ def process_excel_data(file_path):
 def save_to_json(data, excel_filename):
     """Saves the processed data to a JSON file and allows the user to download it."""
     default_json_filename = os.path.splitext(excel_filename)[0] + ".json"
-    user_filename = input(f"💾 Enter JSON filename (default: {default_json_filename}): ").strip()
+    user_filename = input(f"💾 Please enter JSON filename (or press Enter to use '{default_json_filename}'): ").strip()
     json_filename = user_filename if user_filename else default_json_filename
 
     with open(json_filename, 'w', encoding='utf-8') as json_file:

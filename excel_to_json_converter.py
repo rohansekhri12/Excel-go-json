@@ -22,28 +22,38 @@ Excel to JSON Converter Script
 
 🚀 Happy converting!
 """
-
 from google.colab import files
 import pandas as pd
 import json
 import os
+from difflib import get_close_matches  # To suggest correct column names
 
 def select_excel_file():
     """Allows user to upload an Excel file in Google Colab."""
-    uploaded = files.upload()  # Opens file upload dialog
+    uploaded = files.upload()
     for filename in uploaded.keys():
         print(f"✅ File '{filename}' uploaded successfully.")
         return filename  # Return the name of the uploaded file
     return None
 
 def format_tower_name(tower):
-    """Formats the tower name to ensure it follows 'Tower-X' format."""
-    return f"Tower-{tower}".replace(" ", "")
+    """Ensures the tower name follows 'Tower-X' format but avoids duplication."""
+    tower = tower.strip()
+    if not tower.lower().startswith("tower-"):
+        return f"Tower-{tower}"  # Add prefix only if missing
+    return tower  # Return as-is if already formatted
+
+def find_similar_columns(actual_columns, required_columns):
+    """Suggests correct column names for missing ones."""
+    suggestions = {}
+    for required_col in required_columns:
+        close_matches = get_close_matches(required_col, actual_columns, n=1, cutoff=0.7)
+        if close_matches:
+            suggestions[required_col] = close_matches[0]
+    return suggestions
 
 def process_excel_data(file_path):
     """Reads the Excel file and processes it into JSON format."""
-
-    # Check if file exists
     if not os.path.exists(file_path):
         print("🚨 Error: File does not exist.")
         return None
@@ -55,10 +65,22 @@ def process_excel_data(file_path):
         return None
 
     required_columns = ["Tower Name", "Floor Number", "Company Name(s)"]
-    for col in required_columns:
-        if col not in df.columns:
-            print(f"🚨 Error: Missing required column '{col}' in the Excel file.")
-            return None
+    actual_columns = df.columns.tolist()
+    
+    # Find missing columns
+    missing_columns = [col for col in required_columns if col not in actual_columns]
+    
+    if missing_columns:
+        print(f"🚨 Error: Missing required columns: {', '.join(missing_columns)}")
+        
+        # Suggest corrections
+        suggestions = find_similar_columns(actual_columns, missing_columns)
+        if suggestions:
+            for missing_col, suggestion in suggestions.items():
+                print(f"🔍 Did you mean '{suggestion}' instead of '{missing_col}'?")
+        
+        print("❌ Please correct the column names and re-upload the file.")
+        return None
 
     towers_dict = {}
     for _, row in df.iterrows():
@@ -78,16 +100,16 @@ def process_excel_data(file_path):
 
     return towers_list
 
-def save_to_json(data):
+def save_to_json(data, excel_filename):
     """Saves the processed data to a JSON file and allows the user to download it."""
-    json_filename = "tower_data.json"
+    default_json_filename = os.path.splitext(excel_filename)[0] + ".json"
+    user_filename = input(f"💾 Enter JSON filename (default: {default_json_filename}): ").strip()
+    json_filename = user_filename if user_filename else default_json_filename
 
     with open(json_filename, 'w', encoding='utf-8') as json_file:
         json.dump(data, json_file, indent=2)
 
     print(f"✅ Data successfully saved to '{json_filename}'.")
-
-    # Provide download link
     files.download(json_filename)
     print("⬇️ Download started!")
 
@@ -106,7 +128,7 @@ def main():
     data = process_excel_data(file_name)
 
     if data is not None:
-        save_to_json(data)
+        save_to_json(data, file_name)
 
 # Run the script
 main()

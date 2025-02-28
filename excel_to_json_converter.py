@@ -105,20 +105,22 @@ def save_to_json(data, excel_filename):
     """Saves the processed data to a JSON file and allows the user to download it."""
     default_json_filename = os.path.splitext(excel_filename)[0] + ".json"
 
-    # Instruction before input box
-    print(f"💾 Enter a name for the JSON file (press Enter to use '{default_json_filename}'): ")
-    user_filename = input().strip()
+    # Clearer instructions
+    print("\n💾 File Naming Instructions:")
+    print("✅ Default filename is already provided below.")
+    print("✏️ If you want to change it, please modify only the name. The extension will always remain .json.")
+    print("--------------------------------------------------------")
+
+    # Simulated placeholder with a clear message
+    user_filename = input(f"Enter filename (or press Enter to use '{default_json_filename}'): ").strip()
 
     # Ensure .json extension is added
-    if not user_filename:
-        json_filename = default_json_filename
-    else:
-        json_filename = user_filename if user_filename.lower().endswith(".json") else user_filename + ".json"
+    json_filename = os.path.splitext(user_filename)[0] + ".json" if user_filename else default_json_filename
 
     with open(json_filename, 'w', encoding='utf-8') as json_file:
         json.dump(data, json_file, indent=2)
 
-    print(f"✅ Data successfully saved to '{json_filename}'.")
+    print(f"\n✅ Data successfully saved to '{json_filename}'.")
     files.download(json_filename)
     print("⬇️ Download started!")
 
@@ -141,3 +143,4 @@ def main():
 
 # Run the script
 main()
+

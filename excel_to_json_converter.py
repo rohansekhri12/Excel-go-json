@@ -23,18 +23,12 @@ Excel to JSON Converter Script
 🚀 Happy converting!
 """
 
+import gradio as gr
 from google.colab import files
 import pandas as pd
 import json
 import os
 from difflib import get_close_matches
-
-def select_excel_file():
-    uploaded = files.upload()
-    for filename in uploaded.keys():
-        print(f"✅ File '{filename}' uploaded successfully.")
-        return filename
-    return None
 
 def format_tower_name(tower):
     tower = tower.strip()
@@ -50,33 +44,19 @@ def find_similar_columns(actual_columns, required_columns):
             suggestions[required_col] = close_matches[0]
     return suggestions
 
-def process_excel_data(file_path):
-    if not os.path.exists(file_path):
-        print("🚨 Error: File does not exist.")
-        return None
-
-    try:
-        df = pd.read_excel(file_path)
-    except Exception as e:
-        print(f"⚠️ Error reading the Excel file: {e}")
-        return None
-
+def process_excel_data(file):
+    df = pd.read_excel(file.name)
     required_columns = ["Tower Name", "Floor Number", "Company Name(s)"]
     actual_columns = df.columns.tolist()
     
     missing_columns = [col for col in required_columns if col not in actual_columns]
-    
     if missing_columns:
-        print(f"🚨 Error: Missing required columns: {', '.join(missing_columns)}")
-        
         suggestions = find_similar_columns(actual_columns, missing_columns)
+        error_message = f"Missing required columns: {', '.join(missing_columns)}"
         if suggestions:
-            for missing_col, suggestion in suggestions.items():
-                print(f"🔍 Did you mean '{suggestion}' instead of '{missing_col}'?")
-        
-        print("❌ Please correct the column names and re-upload the file.")
-        return None
-
+            error_message += "\nSuggested corrections: " + ", ".join([f"{k} → {v}" for k, v in suggestions.items()])
+        return None, error_message
+    
     towers_dict = {}
     for _, row in df.iterrows():
         tower = format_tower_name(str(row["Tower Name"]))
@@ -85,53 +65,51 @@ def process_excel_data(file_path):
 
         if tower not in towers_dict:
             towers_dict[tower] = {}
-
+        
         if floor in towers_dict[tower]:
             towers_dict[tower][floor].extend(companies)
         else:
             towers_dict[tower][floor] = companies
-
-    towers_list = [{"data": [{"name": list(set(companies)), "floor": floor} for floor, companies in floors.items()], "tower": tower} for tower, floors in towers_dict.items()]
-
-    return towers_list
-
-def save_to_json(data, excel_filename):
-    default_json_filename = os.path.splitext(excel_filename)[0] + ".json"
-
-    # Clearer instructions
-    print("\n💾 File Naming Instructions:")
-    print("✅ Default filename is already provided below.")
-    print("✏️ If you want to change it, please modify only the name. The extension will always remain .json.")
-    print("--------------------------------------------------------")
     
-    # Simulating an input box appearing below instructions
-    print(f"Enter filename (or press Enter to use '{default_json_filename}'): ")
-    user_filename = input().strip()  # Asking for input in the next line
+    towers_list = [{"data": [{"name": list(set(companies)), "floor": floor} for floor, companies in floors.items()], "tower": tower} for tower, floors in towers_dict.items()]
+    return towers_list, None
 
-    json_filename = os.path.splitext(user_filename)[0] + ".json" if user_filename else default_json_filename
+def convert_and_download(file, filename):
+    if not file:
+        return "No file uploaded. Please upload an Excel file.", None
+    
+    json_data, error_message = process_excel_data(file)
+    if error_message:
+        return error_message, None
+    
+    json_filename = os.path.splitext(filename)[0] + ".json"
+    with open(json_filename, "w", encoding="utf-8") as json_file:
+        json.dump(json_data, json_file, indent=2)
+    
+    return f"✅ Data successfully saved as {json_filename}. Download it below:", json_filename
 
-    with open(json_filename, 'w', encoding='utf-8') as json_file:
-        json.dump(data, json_file, indent=2)
+def download_json(json_filename):
+    return files.download(json_filename)
 
-    print(f"\n✅ Data successfully saved to '{json_filename}'.")
-    files.download(json_filename)
-    print("⬇️ Download started!")
+with gr.Blocks() as ui:
+    gr.Markdown("""<h1 style='text-align: center;'>Excel to JSON Converter</h1>""")
+    gr.Image("CIPIS logo.jpg", elem_id="logo", width=200)
+    gr.Markdown("""<p style='text-align: center;'>Powered by CIPIS</p>""")
+    
+    with gr.Row():
+        file_input = gr.File(label="Upload Excel File")
+        filename_input = gr.Textbox(label="Enter JSON filename (without extension)", value="converted_data")
+    
+    convert_button = gr.Button("Convert to JSON")
+    output_text = gr.Textbox(label="Status", interactive=False)
+    download_button = gr.Button("Download JSON", visible=False)
+    
+    def handle_conversion(file, filename):
+        message, json_filename = convert_and_download(file, filename)
+        download_button.visible = bool(json_filename)
+        return message, json_filename
+    
+    convert_button.click(handle_conversion, inputs=[file_input, filename_input], outputs=[output_text, download_button])
+    download_button.click(download_json, inputs=[], outputs=[])
 
-def main():
-    print("📂 Upload an Excel file to process.")
-
-    file_name = select_excel_file()
-
-    if not file_name:
-        print("❌ No file selected. Exiting...")
-        return
-
-    print(f"⚙️ Processing file: {file_name}")
-
-    data = process_excel_data(file_name)
-
-    if data is not None:
-        save_to_json(data, file_name)
-
-# Run the script
-main()
+ui.launch()

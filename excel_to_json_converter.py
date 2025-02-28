@@ -22,11 +22,12 @@ Excel to JSON Converter Script
 
 🚀 Happy converting!
 """
-from google.colab import files
+from google.colab import files, widgets
 import pandas as pd
 import json
 import os
 from difflib import get_close_matches  # To suggest correct column names
+from IPython.display import display
 
 def select_excel_file():
     """Allows user to upload an Excel file in Google Colab."""
@@ -86,7 +87,7 @@ def process_excel_data(file_path):
     for _, row in df.iterrows():
         tower = format_tower_name(str(row["Tower Name"]))
         floor = str(row["Floor Number"])
-        companies = [company.strip() for company in str(row["Company Name(s)"]).split(',')]
+        companies = [company.strip() for company in str(row["Company Name(s)"].split(','))]
 
         if tower not in towers_dict:
             towers_dict[tower] = {}
@@ -97,18 +98,32 @@ def process_excel_data(file_path):
             towers_dict[tower][floor] = companies
 
     towers_list = [{"data": [{"name": list(set(companies)), "floor": floor} for floor, companies in floors.items()], "tower": tower} for tower, floors in towers_dict.items()]
-
+    
     return towers_list
 
 def save_to_json(data, excel_filename):
     """Saves the processed data to a JSON file and allows the user to download it."""
     default_json_filename = os.path.splitext(excel_filename)[0] + ".json"
-    user_filename = input(f"💾 Please enter JSON filename (or press Enter to use '{default_json_filename}'): ").strip()
-    json_filename = user_filename if user_filename else default_json_filename
-
+    
+    # Display instruction above input box
+    print("💾 Enter a name for the JSON file (leave blank to use the default name):")
+    
+    # Create an input box with a placeholder
+    filename_box = widgets.Text(placeholder=f"Default: {default_json_filename}")
+    display(filename_box)
+    
+    # Wait for user input
+    user_filename = filename_box.value.strip()
+    
+    # Ensure the filename has the .json extension
+    if not user_filename:
+        json_filename = default_json_filename
+    else:
+        json_filename = user_filename if user_filename.lower().endswith(".json") else user_filename + ".json"
+    
     with open(json_filename, 'w', encoding='utf-8') as json_file:
         json.dump(data, json_file, indent=2)
-
+    
     print(f"✅ Data successfully saved to '{json_filename}'.")
     files.download(json_filename)
     print("⬇️ Download started!")
@@ -116,17 +131,17 @@ def save_to_json(data, excel_filename):
 def main():
     """Main function to execute the script."""
     print("📂 Upload an Excel file to process.")
-
+    
     file_name = select_excel_file()
-
+    
     if not file_name:
         print("❌ No file selected. Exiting...")
         return
-
+    
     print(f"⚙️ Processing file: {file_name}")
-
+    
     data = process_excel_data(file_name)
-
+    
     if data is not None:
         save_to_json(data, file_name)
 

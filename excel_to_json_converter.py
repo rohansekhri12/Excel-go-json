@@ -23,7 +23,6 @@ Excel to JSON Converter Script
 🚀 Happy converting!
 """
 
-
 from google.colab import files
 import pandas as pd
 import json
@@ -111,7 +110,10 @@ def save_to_json(data, excel_filename):
     user_filename = input().strip()
 
     # Ensure .json extension is added
-    json_filename = (user_filename if user_filename else default_json_filename).rstrip(".json") + ".json"
+    if not user_filename:
+        json_filename = default_json_filename
+    else:
+        json_filename = user_filename if user_filename.lower().endswith(".json") else user_filename + ".json"
 
     with open(json_filename, 'w', encoding='utf-8') as json_file:
         json.dump(data, json_file, indent=2)

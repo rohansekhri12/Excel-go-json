@@ -139,34 +139,29 @@
 
 
 
-# 🚀 Install dependencies (Google Colab)
-!pip install gradio pandas openpyxl --quiet
 
 import gradio as gr
 import pandas as pd
 import json
 import os
 from google.colab import files
-import webbrowser
-
-# ✅ Function to process Excel file
 def process_excel(file_path):
     try:
-        df = pd.read_excel(file_path, usecols=[0, 1, 2])  # Process only first 3 columns
-        df.columns = ["Tower Name", "Floor Number", "Company Name(s)"]
+        df = pd.read_excel(file_path, usecols=[0, 1, 2])  # Process only the first three columns
+        df.columns = ["Tower Name", "Floor Number", "Company Name(s)"]  
 
         data_dict = []
         tower_dict = {}
-
+        
         for _, row in df.iterrows():
             tower = f"Tower-{str(row['Tower Name']).strip()}"
             floor = str(row["Floor Number"]).strip()
             companies = [c.strip() for c in str(row["Company Name(s)"]).split(',')]
-
+            
             if tower not in tower_dict:
                 tower_dict[tower] = {}
                 data_dict.append({"tower": tower, "data": []})
-
+            
             if floor in tower_dict[tower]:
                 tower_dict[tower][floor].extend(companies)
             else:
@@ -175,12 +170,11 @@ def process_excel(file_path):
                     if entry["tower"] == tower:
                         entry["data"].append({"floor": floor, "name": companies})
                         break
-
+        
         return data_dict, None
     except Exception as e:
         return None, f"⚠️ Error processing file: {str(e)}"
 
-# ✅ Function to handle conversion & download
 def handle_conversion(file_path, filename):
     if not file_path:
         return None, None, None, "❌ No file uploaded."
@@ -205,14 +199,23 @@ def handle_conversion(file_path, filename):
 
     return json_string, json_path, json_path, None
 
-# ✅ Define UI function
 def ui():
+
     with gr.Blocks() as demo:
+        # Load Logo
+        logo_path = "logo.png"  # Local path
+        github_logo_url = "https://github.com/rohansekhri12/Excel-go-json/blob/main/CIPIS_logo.jpg"  # Update with your GitHub raw link
+
+        # Try displaying local logo first; fallback to GitHub URL
+        logo_html = f'<img src="{logo_path}" alt="Logo" width="200">' if os.path.exists(logo_path) else f'<img src="{github_logo_url}" alt="Logo" width="200">'
+
+        
+
+    
         gr.HTML("""
         <div style="text-align:center;">
-            <h1 style="color: black;">📊 Excel to JSON Converter</h1>
-            <img src="https://via.placeholder.com/150" alt="CIPIS Logo" style="width:150px;">
-            <h3 style="color: black;"> Powered by CIPIS </h3>
+            <h1>📊 Excel to JSON Converter</h1>
+            <h2> powered by CIPIS <h2>
             <p>Convert structured Excel files into JSON format easily.</p>
         </div>
         """)
@@ -220,9 +223,9 @@ def ui():
         with gr.Row():
             with gr.Column():
                 gr.HTML("""
-                <div style="background:white; padding:15px; border-radius:8px; box-shadow: 2px 2px 10px gray;">
-                    <h3 style="color: black;">✅ Instructions:</h3>
-                    <ul style="color: black; font-size: 15px;">
+                <div style="padding:10px; border:1px solid #ccc; border-radius:5px;">
+                    <h3>✅ Instructions:</h3>
+                    <ul>
                         <li>Ensure Excel contains only the first three columns: <b>Tower Name, Floor Number, Company Name(s)</b>.</li>
                         <li>Company names must be <b>comma-separated</b> if multiple companies share the same floor.</li>
                         <li>You can rename the JSON output (optional).</li>
@@ -247,14 +250,8 @@ def ui():
             download_button = gr.File(label="👥 Download JSON File", interactive=False)
         error_msg = gr.Textbox(label="⚠️ Error Messages", interactive=False, visible=False)
 
-        # Preview Excel when uploaded
-        file_input.change(
-            lambda f: (pd.read_excel(f, usecols=[0, 1, 2]) if f else None),
-            inputs=[file_input],
-            outputs=[excel_preview]
-        )
+        file_input.change(lambda f: (pd.read_excel(f, usecols=[0, 1, 2]) if f else None), inputs=[file_input], outputs=[excel_preview])
 
-        # Convert button action
         convert_button.click(
             handle_conversion,
             inputs=[file_input, filename_input],
@@ -263,13 +260,5 @@ def ui():
 
     return demo
 
-# ✅ Call UI function after defining it
 demo = ui()
-
-# ✅ Launch Gradio with a shareable public link
-gradio_info = demo.launch(share=True)
-
-# ✅ Extract and open Gradio link
-if isinstance(gradio_info, dict) and "share_url" in gradio_info:
-    gradio_link = gradio_info["share_url"]
-    webbrowser.open(gradio_link)
+demo.launch()

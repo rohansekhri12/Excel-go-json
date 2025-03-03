@@ -144,6 +144,8 @@ import gradio as gr
 import pandas as pd
 import json
 import os
+
+import shutil
 from google.colab import files
 def process_excel(file_path):
     try:
@@ -175,6 +177,7 @@ def process_excel(file_path):
     except Exception as e:
         return None, f"⚠️ Error processing file: {str(e)}"
 
+
 def handle_conversion(file_path, filename):
     if not file_path:
         return None, None, None, "❌ No file uploaded."
@@ -191,13 +194,15 @@ def handle_conversion(file_path, filename):
 
     json_string = json.dumps(json_data, indent=2)
 
-    # 🚀 Auto-download in Google Colab
+    # ✅ Force Download in Google Colab
     try:
-        files.download(json_path)  # Works in Google Colab
-    except:
-        pass  # Ignore if not in Colab
+        shutil.move(json_path, "/content/")
+        files.download(f"/content/{json_filename}")  # Force download in Colab
+    except Exception as e:
+        return None, None, None, f"⚠️ Download failed: {str(e)}"
 
-    return json_string, json_path, json_path, None
+    return json_string, json_filename, json_filename, None
+
 
 def ui():
 

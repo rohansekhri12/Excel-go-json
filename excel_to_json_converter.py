@@ -144,9 +144,12 @@ import json
 import os
 from google.colab import files
 import webbrowser
+from IPython.display import display, HTML
+
+# Function to process Excel file
 def process_excel(file_path):
     try:
-        df = pd.read_excel(file_path, usecols=[0, 1, 2])  # Process only the first three columns
+        df = pd.read_excel(file_path, usecols=[0, 1, 2])  # Process only first three columns
         df.columns = ["Tower Name", "Floor Number", "Company Name(s)"]  
 
         data_dict = []
@@ -174,6 +177,7 @@ def process_excel(file_path):
     except Exception as e:
         return None, f"⚠️ Error processing file: {str(e)}"
 
+# Function to handle conversion
 def handle_conversion(file_path, filename):
     if not file_path:
         return None, None, None, "❌ No file uploaded."
@@ -198,23 +202,13 @@ def handle_conversion(file_path, filename):
 
     return json_string, json_path, json_path, None
 
+# UI Function
 def ui():
-
     with gr.Blocks() as demo:
-        # Load Logo
-        logo_path = "logo.png"  # Local path
-        github_logo_url = "https://github.com/rohansekhri12/Excel-go-json/blob/main/CIPIS_logo.jpg"  # Update with your GitHub raw link
-
-        # Try displaying local logo first; fallback to GitHub URL
-        logo_html = f'<img src="{logo_path}" alt="Logo" width="200">' if os.path.exists(logo_path) else f'<img src="{github_logo_url}" alt="Logo" width="200">'
-
-        
-
-    
         gr.HTML("""
         <div style="text-align:center;">
             <h1>📊 Excel to JSON Converter</h1>
-            <h2> powered by CIPIS <h2>
+            <h2> powered by CIPIS </h2>
             <p>Convert structured Excel files into JSON format easily.</p>
         </div>
         """)
@@ -259,15 +253,21 @@ def ui():
 
     return demo
 
+# ✅ Launch UI
+demo = ui()
 
+# ✅ Launch Gradio with a shareable link in Colab
+gradio_info = demo.launch(share=True)
+gradio_link = None
 
-    demo = ui()
+# ✅ Extract the correct Gradio URL
+if isinstance(gradio_info, dict) and "share_url" in gradio_info:
+    gradio_link = gradio_info["share_url"]
+elif isinstance(gradio_info, str):  # Handle string case
+    gradio_link = gradio_info
 
-# Launch Gradio with a shareable public link
-    gradio_info = demo.launch(share=True)
-
-# Extract the correct Gradio URL
-    if isinstance(gradio_info, dict) and "share_url" in gradio_info:
-        gradio_link = gradio_info["share_url"]  # Extract Gradio URL
-        webbrowser.open(gradio_link)  # Open the link in a new browser tab
+# ✅ Display clickable Gradio link in Colab
+if gradio_link:
+    display(HTML(f'<a href="{gradio_link}" target="_blank">🔗 Click here to open Gradio App</a>'))
+    webbrowser.open(gradio_link)
 

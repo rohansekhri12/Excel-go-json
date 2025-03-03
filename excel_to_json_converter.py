@@ -188,6 +188,13 @@ def handle_conversion(file_path, filename):
         json.dump(json_data, json_file, indent=2)
 
     json_string = json.dumps(json_data, indent=2)
+
+    # 🚀 Auto-download in Google Colab
+    try:
+        files.download(json_path)  # Works in Google Colab
+    except:
+        pass  # Ignore if not in Colab
+
     return json_string, json_path, json_path, None
 
 def ui():

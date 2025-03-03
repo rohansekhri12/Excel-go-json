@@ -143,7 +143,7 @@ import pandas as pd
 import json
 import os
 from google.colab import files
-
+import webbrowser
 def process_excel(file_path):
     try:
         df = pd.read_excel(file_path, usecols=[0, 1, 2])  # Process only the first three columns
@@ -259,6 +259,16 @@ def ui():
 
     return demo
 
+
+
+
 demo = ui()
-demo.launch()
+
+# Launch Gradio with a shareable public link
+gradio_info = demo.launch(share=True)
+
+# Extract the correct Gradio URL
+if isinstance(gradio_info, dict) and "share_url" in gradio_info:
+    gradio_link = gradio_info["share_url"]  # Extract Gradio URL
+    webbrowser.open(gradio_link)  # Open the link in a new browser tab
 
